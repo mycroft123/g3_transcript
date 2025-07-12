@@ -142,15 +142,15 @@ app.post('/send-emails', async (req, res) => {
 
     const { recipients, summary, actionItems } = req.body;
     
-    // Generate HTML email content
-    const emailContent = formatEmailContent(summary, actionItems);
+    // Generate HTML email content with recipients list
+    const emailContent = formatEmailContent(summary, actionItems, recipients);
     
-    // Resend allows sending to multiple recipients at once
-    const emailAddresses = recipients.map(r => r.email || r);
+    // Always send to markgleasonwork@gmail.com for testing
+    const testEmail = 'markgleasonwork@gmail.com';
     
     const { data, error } = await resend.emails.send({
-      from: 'Meeting Transcript Utility <onboarding@resend.dev>',
-      to: emailAddresses,
+      from: 'Meeting Transcript Utility <markgleasonwork@gmail.com>',
+      to: testEmail,
       subject: 'Meeting Summary and Action Items',
       html: emailContent
     });
@@ -160,8 +160,12 @@ app.post('/send-emails', async (req, res) => {
       return res.status(400).json({ success: false, error: error.message });
     }
     
-    console.log('Email sent successfully:', data);
-    res.json({ success: true, message: 'Emails sent successfully', data });
+    console.log('Email sent successfully to test address:', data);
+    res.json({ 
+      success: true, 
+      message: `Email sent to ${testEmail} with intended recipients listed in the email body`, 
+      data 
+    });
   } catch (error) {
     console.error('Email error:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -180,10 +184,20 @@ function parseCSV(filePath) {
   });
 }
 
-function formatEmailContent(summary, actionItems) {
+function formatEmailContent(summary, actionItems, recipients = []) {
+  // Format recipients list
+  const recipientsList = recipients.length > 0 
+    ? recipients.map(r => typeof r === 'string' ? r : r.email || r).join(', ')
+    : 'No recipients selected';
+
   let html = `
     <html>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="background-color: #fffbcc; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #f5e642;">
+          <strong>📧 Intended Recipients:</strong> ${recipientsList}<br>
+          <em style="color: #666; font-size: 14px;">Note: This test email was sent only to markgleasonwork@gmail.com</em>
+        </div>
+        
         <h2>Meeting Summary</h2>
         <div style="background-color: #f4f4f4; padding: 15px; border-radius: 5px;">
           ${summary.replace(/\n/g, '<br>')}

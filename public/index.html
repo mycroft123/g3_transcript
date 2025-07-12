@@ -1324,6 +1324,57 @@
         }
 
         async function sendEmailsDirectly() {
+    const selectedContacts = [];
+    const checkboxes = document.querySelectorAll('#emailContacts input[type="checkbox"]:checked');
+    
+    checkboxes.forEach(checkbox => {
+        const index = checkbox.id.split('_')[2];
+        const keys = Object.keys(contactsList[index]);
+        const email = contactsList[index][keys[2]] || '';
+        if (email) {
+            selectedContacts.push(email);
+        }
+    });
+    
+    if (selectedContacts.length === 0) {
+        showMessage('Please select at least one recipient', 'error');
+        return;
+    }
+    
+    if (!generatedSummary.summary) {
+        showMessage('Please generate a summary first', 'error');
+        return;
+    }
+    
+    showLoading(true);
+    document.querySelector('.loading p').innerHTML = '📧 Sending test email to markgleasonwork@gmail.com...';
+    
+    try {
+        const response = await fetch('/send-emails', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                recipients: selectedContacts,
+                summary: generatedSummary.summary,
+                actionItems: generatedSummary.actionItems
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showMessage(`✅ Test email sent to markgleasonwork@gmail.com! The email shows ${selectedContacts.length} intended recipient(s) at the top.`, 'success');
+        } else {
+            showMessage('❌ Email sending failed: ' + (data.error || 'Unknown error'), 'error');
+        }
+    } catch (error) {
+        showMessage('❌ Email error: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
             const selectedContacts = [];
             const checkboxes = document.querySelectorAll('#emailContacts input[type="checkbox"]:checked');
             
