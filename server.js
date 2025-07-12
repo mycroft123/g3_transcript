@@ -1,11 +1,10 @@
-﻿// Railway deployment
-const express = require('express');
+﻿const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs-extra');
 const csv = require('csv-parser');
 const OpenAI = require('openai');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 require('dotenv').config();
 
 const app = express();
@@ -15,6 +14,13 @@ const PORT = process.env.PORT || 3000;
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
+
+// Initialize Resend
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+if (!resend) {
+  console.warn('WARNING: RESEND_API_KEY not found. Email features will not work.');
+}
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -30,20 +36,14 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Configure nodemailer
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
-
 // Middleware
 app.use(express.json());
 app.use(express.static('public'));
+
+// Serve logo file specifically
+app.get('/sap_logo.jpg', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'sap_logo.jpg'));
+});
 
 // Routes
 app.get('/', (req, res) => {
@@ -109,18 +109,17 @@ app.post('/generate-summary', async (req, res) => {
     }`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4-turbo",  // This supports JSON mode
+      model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",
-          content: "You are a helpful assistant that analyzes meeting transcripts and creates concise summaries and action items."
+          content: "You are a helpful assistant that analyzes meeting transcripts and creates concise summaries and action items. Always respond with valid JSON."
         },
         {
           role: "user",
           content: prompt
         }
-      ],
-      response_format: { type: "json_object" }
+      ]
     });
 
     const result = JSON.parse(completion.choices[0].message.content);
@@ -131,23 +130,38 @@ app.post('/generate-summary', async (req, res) => {
   }
 });
 
-// Send email endpoint
+// Send email endpoint using Resend
 app.post('/send-emails', async (req, res) => {
   try {
-    const { recipients, summary, actionItems } = req.body;
-    
-    const emailContent = formatEmailContent(summary, actionItems);
-    
-    for (const recipient of recipients) {
-      await transporter.sendMail({
-        from: process.env.EMAIL_FROM,
-        to: recipient.email,
-        subject: 'Meeting Summary and Action Items',
-        html: emailContent
+    if (!resend) {
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Resend API key not configured. Please add RESEND_API_KEY to environment variables.' 
       });
     }
+
+    const { recipients, summary, actionItems } = req.body;
     
-    res.json({ success: true, message: 'Emails sent successfully' });
+    // Generate HTML email content
+    const emailContent = formatEmailContent(summary, actionItems);
+    
+    // Resend allows sending to multiple recipients at once
+    const emailAddresses = recipients.map(r => r.email || r);
+    
+    const { data, error } = await resend.emails.send({
+      from: 'Meeting Transcript Utility <onboarding@resend.dev>',
+      to: emailAddresses,
+      subject: 'Meeting Summary and Action Items',
+      html: emailContent
+    });
+    
+    if (error) {
+      console.error('Resend error:', error);
+      return res.status(400).json({ success: false, error: error.message });
+    }
+    
+    console.log('Email sent successfully:', data);
+    res.json({ success: true, message: 'Emails sent successfully', data });
   } catch (error) {
     console.error('Email error:', error);
     res.status(500).json({ success: false, error: error.message });
