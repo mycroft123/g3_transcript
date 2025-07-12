@@ -1,0 +1,11 @@
+﻿{
+  "providers": ["node"],
+  "buildPlan": {
+    "phases": {
+      "install": {
+        "cmds": ["npm install"]
+      }
+    }
+  },
+  "start": "node server.js"
+}
