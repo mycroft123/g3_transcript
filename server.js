@@ -149,7 +149,7 @@ app.post('/send-emails', async (req, res) => {
     const testEmail = 'markgleasonwork@gmail.com';
     
     const { data, error } = await resend.emails.send({
-      from: 'Meeting Transcript Utility <markgleasonwork@gmail.com>',
+      from: 'Meeting Transcript Utility <onboarding@resend.dev>',
       to: testEmail,
       subject: 'Meeting Summary and Action Items',
       html: emailContent
