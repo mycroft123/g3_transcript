@@ -92,6 +92,9 @@ app.post('/generate-summary', async (req, res) => {
     const prompt = `Please analyze the following meeting transcript and provide:
     1. An executive summary (2-3 paragraphs)
     2. A list of action items with assigned owners
+    3. Key takeaways
+    4. Themes and topics
+    5. Next steps
     
     Meeting Transcript:
     ${transcript}
