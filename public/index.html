@@ -1106,26 +1106,63 @@
                 showMessage('Summary error: ' + error.message, 'error');
             }
         }
-
         function displaySummary(data) {
-            const summaryDiv = document.getElementById('summaryContent');
-            summaryDiv.innerHTML = `<p>${data.summary.replace(/\n/g, '<br><br>')}</p>`;
-            
-            const actionDiv = document.getElementById('actionContent');
-            actionDiv.innerHTML = '';
-            
-            data.actionItems.forEach((item, index) => {
-                const urgencyIcon = item.timeline && item.timeline.includes('week') ? '🔴' : '🟡';
-                actionDiv.innerHTML += `
-                    <div class="action-item">
-                        <strong>${urgencyIcon} Action Item ${index + 1}: ${item.item}</strong><br>
-                        <strong>Owner:</strong> ${item.owner}<br>
-                        ${item.timeline ? `<strong>Timeline:</strong> ${item.timeline}` : '<strong>Timeline:</strong> Not specified'}
-                    </div>
-                `;
-            });
-        }
-
+    const summaryDiv = document.getElementById('summaryContent');
+    
+    // Build comprehensive summary HTML
+    let summaryHTML = `
+        <div class="summary-section">
+            <h4 style="color: var(--primary-blue); margin-bottom: 15px;">📄 Executive Summary</h4>
+            <p>${data.summary.replace(/\n/g, '<br><br>')}</p>
+        </div>
+        
+        <div class="summary-section" style="margin-top: 30px;">
+            <h4 style="color: var(--primary-blue); margin-bottom: 15px;">🎯 Key Takeaways</h4>
+            <ul style="margin-left: 20px;">
+                ${data.keyTakeaways.map(takeaway => `<li>${takeaway}</li>`).join('')}
+            </ul>
+        </div>
+        
+        <div class="summary-section" style="margin-top: 30px;">
+            <h4 style="color: var(--primary-blue); margin-bottom: 15px;">📊 Themes & Topics</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                ${(data.themesTopics || data.themesAndTopics || []).map(theme => 
+                    `<span style="background-color: var(--accent-blue); color: var(--primary-blue); padding: 5px 15px; border-radius: 20px; font-size: 14px;">${typeof theme === 'string' ? theme : theme.theme}</span>`
+                ).join('')}
+            </div>
+        </div>
+        
+        <div class="summary-section" style="margin-top: 30px;">
+            <h4 style="color: var(--primary-blue); margin-bottom: 15px;">⏭️ Next Steps</h4>
+            <ol style="margin-left: 20px;">
+                ${data.nextSteps.map(step => {
+                    if (typeof step === 'string') {
+                        return `<li>${step}</li>`;
+                    } else {
+                        return `<li><strong>${step.responsible}:</strong> ${step.step} ${step.deadline ? `(${step.deadline})` : ''}</li>`;
+                    }
+                }).join('')}
+            </ol>
+        </div>
+    `;
+    
+    summaryDiv.innerHTML = summaryHTML;
+    
+    // Continue with action items display...
+    const actionDiv = document.getElementById('actionContent');
+    actionDiv.innerHTML = '';
+    
+    data.actionItems.forEach((item, index) => {
+        const urgencyIcon = item.timeline && item.timeline.includes('week') ? '🔴' : '🟡';
+        actionDiv.innerHTML += `
+            <div class="action-item">
+                <strong>${urgencyIcon} Action Item ${index + 1}: ${item.item}</strong><br>
+                <strong>Owner:</strong> ${item.owner}<br>
+                ${item.timeline ? `<strong>Timeline:</strong> ${item.timeline}` : '<strong>Timeline:</strong> Not specified'}
+            </div>
+        `;
+    });
+}
         function generateHTMLEmail() {
             // Create HTML email content with nice formatting
             let html = `

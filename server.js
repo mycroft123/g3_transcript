@@ -88,7 +88,7 @@ app.post('/upload', upload.array('files', 10), async (req, res) => {
 app.post('/generate-summary', async (req, res) => {
   try {
     const { transcript } = req.body;
-    
+   
     const prompt = `Please analyze the following meeting transcript and provide:
     1. An executive summary (2-3 paragraphs)
     2. A list of action items with assigned owners
@@ -108,6 +108,19 @@ app.post('/generate-summary', async (req, res) => {
           "owner": "person responsible",
           "timeline": "estimated timeline if mentioned"
         }
+      ],
+      "keyTakeaways": [
+        "takeaway 1",
+        "takeaway 2",
+        "takeaway 3"
+      ],
+      "themesTopics": [
+        "theme or topic 1",
+        "theme or topic 2"
+      ],
+      "nextSteps": [
+        "next step 1",
+        "next step 2"
       ]
     }`;
 
