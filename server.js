@@ -113,13 +113,14 @@ app.post('/generate-summary', async (req, res) => {
       messages: [
         {
           role: "system",
-          content: "You are a helpful assistant that analyzes meeting transcripts and creates concise summaries and action items. Always respond with valid JSON."
+          content: "You are a helpful assistant that analyzes meeting transcripts and creates concise summaries and action items. Always respond with valid JSON only, without any markdown formatting, code blocks, or backticks."
         },
         {
           role: "user",
           content: prompt
         }
-      ]
+      ],
+      response_format: { type: "json_object" }  // Force JSON response
     });
 
     const result = JSON.parse(completion.choices[0].message.content);
